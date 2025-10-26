@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "josevseb.google-java-format-for-vs-code",
-    "eamodio.gitlens"
+    "eamodio.gitlens",
+    "ms-vsliveshare.vsliveshare"
   ]
 }
