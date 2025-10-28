@@ -4,7 +4,11 @@
 
 package frc.robot;
 
+import com.revrobotics.spark.SparkMax;
+
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -12,11 +16,22 @@ import edu.wpi.first.wpilibj.TimedRobot;
  * this project, you must also update the Main.java file in the project.
  */
 public class Robot extends TimedRobot {
+  private XboxController xboxController;
+  private SparkMax speedMotor;
+  private SparkMax turnMotor;
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
   public Robot() {}
+
+  @Override
+  public void robotInit() {
+    xboxController = new XboxController(0); // Initialize XboxController on port 0
+    speedMotor = new SparkMax(30, com.revrobotics.spark.SparkLowLevel.MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
+    turnMotor = new SparkMax(31, com.revrobotics.spark.SparkLowLevel.MotorType.kBrushless);
+  }
 
   /**
    * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
@@ -42,7 +57,22 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    double leftY = -xboxController.getLeftY(); // Example: Get left joystick Y-axis value
+    if (leftY <= 0.05 && leftY >= -0.05) {  
+      leftY = 0; // Sets input to 0
+    }
+    speedMotor.set(leftY); // Set motor speed based on joystick input
+    
+    double rightX = xboxController.getRightX(); // Example: Get right joystick X-axis value
+    if (rightX <= 0.05 && rightX >= -0.05){
+      rightX = 0;
+    }
+    turnMotor.set(rightX);
+    SmartDashboard.putNumber("turnMotor", rightX);
+    SmartDashboard.putNumber("speedMotor", leftY);
+
+  }
 
   /** This function is called once when the robot is disabled. */
   @Override
