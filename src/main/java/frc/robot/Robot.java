@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -29,8 +30,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     xboxController = new XboxController(0); // Initialize XboxController on port 0
-    speedMotor = new SparkMax(30, com.revrobotics.spark.SparkLowLevel.MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
-    turnMotor = new SparkMax(31, com.revrobotics.spark.SparkLowLevel.MotorType.kBrushless);
+    speedMotor = new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
+    turnMotor = new SparkMax(31, MotorType.kBrushless);
   }
 
   /**
