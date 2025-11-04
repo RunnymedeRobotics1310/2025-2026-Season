@@ -30,7 +30,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     xboxController = new XboxController(0); // Initialize XboxController on port 0
-    speedMotor = new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
+    speedMotor =
+        new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
     turnMotor = new SparkMax(31, MotorType.kBrushless);
   }
 
@@ -60,19 +61,15 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     double leftY = -xboxController.getLeftY(); // Example: Get left joystick Y-axis value
-    if (leftY <= 0.05 && leftY >= -0.05) {  
-      leftY = 0; // Sets input to 0
-    }
-    speedMotor.set(leftY); // Set motor speed based on joystick input
-    
+    double speed = deadband(leftY);
+    speedMotor.set(speed); // Set motor speed based on joystick input
+
     double rightX = xboxController.getRightX(); // Example: Get right joystick X-axis value
-    if (rightX <= 0.05 && rightX >= -0.05){
-      rightX = 0;
-    }
-    turnMotor.set(rightX);
+    double turn = deadband(rightX);
+    turnMotor.set(turn);
+
     SmartDashboard.putNumber("turnMotor", rightX);
     SmartDashboard.putNumber("speedMotor", leftY);
-
   }
 
   /** This function is called once when the robot is disabled. */
@@ -98,4 +95,15 @@ public class Robot extends TimedRobot {
   /** This function is called periodically whilst in simulation. */
   @Override
   public void simulationPeriodic() {}
+
+  private double deadband(double value) {
+
+    if (Math.abs(value) < 0.2) {
+      return 0.0;
+    }
+
+    // FIXME: Implement a better deadband function
+
+    return value;
+  }
 }
