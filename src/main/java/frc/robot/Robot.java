@@ -30,7 +30,8 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     xboxController = new XboxController(0); // Initialize XboxController on port 0
-    speedMotor = new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
+    speedMotor =
+        new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
     turnMotor = new SparkMax(31, MotorType.kBrushless);
   }
 
@@ -59,20 +60,19 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    double leftY = -xboxController.getLeftY(); // Example: Get left joystick Y-axis value
-    if (leftY <= 0.05 && leftY >= -0.05) {  
-      leftY = 0; // Sets input to 0
-    }
-    speedMotor.set(leftY); // Set motor speed based on joystick input
-    
-    double rightX = xboxController.getRightX(); // Example: Get right joystick X-axis value
-    if (rightX <= 0.05 && rightX >= -0.05){
-      rightX = 0;
+    double leftY = -xboxController.getLeftY();
+    double outputSpeed = 0;
+
+    speedMotor.set(outputSpeed); // Set motor speed based on calculated output
+    SmartDashboard.putNumber("speedMotor", outputSpeed);
+
+    double rightX = xboxController.getRightX(); // Get right joystick X-axis value
+    if (Math.abs(rightX) <= 0.2) {
+      rightX = 0; // Deadzone for turning
     }
     turnMotor.set(rightX);
-    SmartDashboard.putNumber("turnMotor", rightX);
-    SmartDashboard.putNumber("speedMotor", leftY);
 
+    SmartDashboard.putNumber("turnMotor", rightX);
   }
 
   /** This function is called once when the robot is disabled. */
