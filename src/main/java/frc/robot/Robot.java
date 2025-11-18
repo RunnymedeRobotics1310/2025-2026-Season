@@ -25,7 +25,8 @@ public class Robot extends TimedRobot {
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
    */
-  public Robot() {}
+  public Robot() {
+  }
 
   @Override
   public void robotInit() {
@@ -42,31 +43,35 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+  }
 
   /** This function is called once when autonomous is enabled. */
   @Override
-  public void autonomousInit() {}
+  public void autonomousInit() {
+  }
 
   /** This function is called periodically during autonomous. */
   @Override
-  public void autonomousPeriodic() {}
+  public void autonomousPeriodic() {
+  }
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+  }
 
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
     double leftY = -xboxController.getLeftY(); // Example: Get left joystick Y-axis value
-    if (leftY <= 0.05 && leftY >= -0.05) {  
+    if (leftY <= 0.05 && leftY >= -0.05) {
       leftY = 0; // Sets input to 0
     }
     speedMotor.set(leftY); // Set motor speed based on joystick input
-    
+
     double rightX = xboxController.getRightX(); // Example: Get right joystick X-axis value
-    if (rightX <= 0.05 && rightX >= -0.05){
+    if (rightX <= 0.05 && rightX >= -0.05) {
       rightX = 0;
     }
     turnMotor.set(rightX);
@@ -77,25 +82,49 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when the robot is disabled. */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+  }
 
   /** This function is called periodically when disabled. */
   @Override
-  public void disabledPeriodic() {}
+  public void disabledPeriodic() {
+  }
 
   /** This function is called once when test mode is enabled. */
   @Override
-  public void testInit() {}
+  public void testInit() {
+  }
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+  }
 
   /** This function is called once when the robot is first started up. */
   @Override
-  public void simulationInit() {}
+  public void simulationInit() {
+  }
 
   /** This function is called periodically whilst in simulation. */
   @Override
-  public void simulationPeriodic() {}
+  public void simulationPeriodic() {
+  }
+
+  private double deadBand(double y) {
+    if (Math.abs(y) < 0.2) {
+      return (0);
+    } else if (y < 0.7 && y >= 0.2) {
+      return ((y - 0.2) * 0.6);
+    } else if (y > -0.7 && y <= -0.2) {
+      return ((y + 0.2) * 0.6);
+    } else if (y <= 1.0 && y >= 0.7) {
+      return ((y * (7 / 3) + (4 / 3)));
+    } else if (y >= -1.0 && y <= -0.7) {
+      return ((y * (7 / 3) + (4 / 3)));
+    } else {
+      return (0);
+    }
+  }
+
 }
+
