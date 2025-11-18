@@ -45,7 +45,15 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+
+    double Nigeria = Math.round(speedMotor.getEncoder().getVelocity() * 100) / 100.0;
+    double chickenStars = Math.round(speedMotor.getEncoder().getPosition() * 100) / 100.0;
+
+
+    SmartDashboard.putNumber("SpeedMotorVelocityT", Nigeria);
+    SmartDashboard.putNumber("speedMotorPositionT", chickenStars);
+  }
 
   /** This function is called once when autonomous is enabled. */
   @Override
@@ -70,8 +78,7 @@ public class Robot extends TimedRobot {
     double turn = deadband(rightX);
     turnMotor.set(turn);
 
-    SmartDashboard.putNumber("turnMotor", rightX);
-    SmartDashboard.putNumber("speedMotor", leftY);
+    
   }
 
   /** This function is called once when the robot is disabled. */
@@ -98,14 +105,27 @@ public class Robot extends TimedRobot {
   @Override
   public void simulationPeriodic() {}
 
-  private double deadband(double value) {
+  private double deadband(double x) {
 
-    if (Math.abs(value) < 0.2) {
+    if (Math.abs(x) < 0.2) {
+      return 0.0;
+    } else if (x >= 0.2 && x < 0.7) {
+      return (x * 0.6 - 0.12);
+    } else if (x <= -0.2 && x > -0.7) {
+      return (x * 0.6 + 0.12);
+    } else if (x >= 0.7 && x <= 1.0) {
+      return (x * 2.33 - 1.33);
+    }
+      else if (x <= -0.7 && x >= -1.0) {
+      return (x * 2.33 + 1.33);
+    } else {
       return 0.0;
     }
+    
+    
 
     // FIXME: Implement a better deadband function
 
-    return value;
+  
   }
 }
