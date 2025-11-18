@@ -44,6 +44,19 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    double rawSpeedMotorPosition = speedMotor.getEncoder().getPosition();
+    double rawSpeedMotorVelocity = speedMotor.getEncoder().getVelocity();
+    double roundedSpeedMotorVelocity = Math.round(rawSpeedMotorVelocity*100.0)/100.0;
+    double roundedMotorPosition = Math.round(rawSpeedMotorPosition * 100.0) / 100.0;
+
+    double rawTurnMotorPosition = turnMotor.getEncoder().getPosition();
+    double rawTurnMotorVelocity = turnMotor.getEncoder().getVelocity();
+    double roundedTurnMotorVelocity = Math.round(rawTurnMotorVelocity*100.0)/100.0;
+    double roundedTurnMotorPosition = Math.round(rawTurnMotorPosition * 100.0) / 100.0;
+    
+
+    SmartDashboard.putNumber("speedMotorPosition", roundedMotorPosition);
+    SmartDashboard.putNumber("speedMotorVelocity", roundedSpeedMotorVelocity);
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -65,18 +78,12 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
     double leftY = -xboxController.getLeftY(); // Example: Get left joystick Y-axis value
-    if (leftY <= 0.05 && leftY >= -0.05) {
-      leftY = 0; // Sets input to 0
-    }
-    speedMotor.set(leftY); // Set motor speed based on joystick input
+    double outY = deadBand(leftY);
+    speedMotor.set(outY); // Set motor speed based on joystick input
 
     double rightX = xboxController.getRightX(); // Example: Get right joystick X-axis value
-    if (rightX <= 0.05 && rightX >= -0.05) {
-      rightX = 0;
-    }
-    turnMotor.set(rightX);
-    SmartDashboard.putNumber("turnMotor", rightX);
-    SmartDashboard.putNumber("speedMotor", leftY);
+    double outX = deadBand(rightX);
+    turnMotor.set(outX);
 
   }
 
@@ -118,7 +125,7 @@ public class Robot extends TimedRobot {
     } else if (y > -0.7 && y <= -0.2) {
       return ((y + 0.2) * 0.6);
     } else if (y <= 1.0 && y >= 0.7) {
-      return ((y * (7 / 3) + (4 / 3)));
+      return ((y * (7 / 3) - (4 / 3)));
     } else if (y >= -1.0 && y <= -0.7) {
       return ((y * (7 / 3) + (4 / 3)));
     } else {
