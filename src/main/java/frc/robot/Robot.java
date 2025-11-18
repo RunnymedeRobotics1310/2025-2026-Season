@@ -33,6 +33,8 @@ public class Robot extends TimedRobot {
     speedMotor =
         new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
     turnMotor = new SparkMax(31, MotorType.kBrushless);
+
+    System.out.println("Im so sigma twin");
   }
 
   /**
