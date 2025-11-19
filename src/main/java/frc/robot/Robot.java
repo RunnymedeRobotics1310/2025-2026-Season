@@ -6,6 +6,8 @@ package frc.robot;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
@@ -21,6 +23,12 @@ public class Robot extends TimedRobot {
   private SparkMax speedMotor;
   private SparkMax turnMotor;
 
+  private double DEADZONE = 0.2;
+  private double SLOWZONE = 0.7;
+
+  private double turnMotorZero;
+  private double driveMototZero;
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -32,6 +40,18 @@ public class Robot extends TimedRobot {
     xboxController = new XboxController(0); // Initialize XboxController on port 0
     speedMotor = new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
     turnMotor = new SparkMax(31, MotorType.kBrushless);
+
+    turnMotorZero = turnMotor.getEncoder().getPosition();
+
+
+    SparkMaxConfig brakeSparkConfig = new SparkMaxConfig();
+    brakeSparkConfig
+        .smartCurrentLimit(50)
+        .idleMode(IdleMode.kBrake);
+
+    brakeSparkConfig
+        .encoder.velocityConversionFactor(1.0);
+    brakeSparkConfig.encoder.positionConversionFactor(1);
   }
 
   /**
@@ -42,7 +62,13 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+
+    SmartDashboard.putNumber("Trun speed", turnMotor.getEncoder().getVelocity());
+    SmartDashboard.putNumber("Turn angle", (turnMotor.getEncoder().getPosition() - turnMotorZero) * 360);
+
+
+  }
 
   /** This function is called once when autonomous is enabled. */
   @Override
@@ -59,21 +85,19 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    double leftY = -xboxController.getLeftY(); // Example: Get left joystick Y-axis value
-    if (leftY <= 0.05 && leftY >= -0.05) {  
-      leftY = 0; // Sets input to 0
-    }
-    speedMotor.set(leftY); // Set motor speed based on joystick input
-    
-    double rightX = xboxController.getRightX(); // Example: Get right joystick X-axis value
-    if (rightX <= 0.05 && rightX >= -0.05){
+    double leftY = -xboxController.getLeftY();
+    double rightX = xboxController.getRightX();
+
+    if (rightX <= 0.05 && rightX >= -0.05) {
       rightX = 0;
     }
-    turnMotor.set(rightX);
-    SmartDashboard.putNumber("turnMotor", rightX);
-    SmartDashboard.putNumber("speedMotor", leftY);
+
+    speedMotor.set(deadband(leftY));
+    turnMotor.set(deadband(rightX));
 
   }
+  
+  
 
   /** This function is called once when the robot is disabled. */
   @Override
@@ -98,4 +122,16 @@ public class Robot extends TimedRobot {
   /** This function is called periodically whilst in simulation. */
   @Override
   public void simulationPeriodic() {}
+  
+  public double deadband(double value) {
+    if (Math.abs(value) < DEADZONE) {
+      return 0;
+    }
+    
+    if(Math.abs(value) < SLOWZONE){
+      return (0.6 * Math.abs(value) - 0.12) * Math.signum(value);
+    } else {
+      return (2.3 * Math.abs(value) - 1.3) * Math.signum(value);
+    }
+  }
 }
