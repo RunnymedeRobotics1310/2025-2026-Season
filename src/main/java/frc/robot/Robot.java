@@ -5,6 +5,9 @@
 package frc.robot;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+
+import java.security.Key;
+
 import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -46,17 +49,25 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     double rawSpeedMotorPosition = speedMotor.getEncoder().getPosition();
     double rawSpeedMotorVelocity = speedMotor.getEncoder().getVelocity();
-    double roundedSpeedMotorVelocity = Math.round(rawSpeedMotorVelocity*100.0)/100.0;
-    double roundedMotorPosition = Math.round(rawSpeedMotorPosition * 100.0) / 100.0;
-
     double rawTurnMotorPosition = turnMotor.getEncoder().getPosition();
     double rawTurnMotorVelocity = turnMotor.getEncoder().getVelocity();
+    //Gets all the raw positional and kinematic data from both motors and stores them into variables
+
+    double roundedSpeedMotorVelocity = Math.round(rawSpeedMotorVelocity*100.0)/100.0;
+    double roundedSpeedMotorPosition = Math.round(rawSpeedMotorPosition * 100.0) / 100.0;
     double roundedTurnMotorVelocity = Math.round(rawTurnMotorVelocity*100.0)/100.0;
     double roundedTurnMotorPosition = Math.round(rawTurnMotorPosition * 100.0) / 100.0;
-    
+   //Rounds the raw data from the motors to the hundredths place.
 
-    SmartDashboard.putNumber("speedMotorPosition", roundedMotorPosition);
-    SmartDashboard.putNumber("speedMotorVelocity", roundedSpeedMotorVelocity);
+    SmartDashboard.putNumber("Speed Motor Position", roundedSpeedMotorPosition);
+    SmartDashboard.putNumber("Speed Motor Velocity", roundedSpeedMotorVelocity);
+    //Displays The Speed Motor Data Into A Smart Dashboard
+
+    SmartDashboard.putNumber("Turn Motor Position", roundedTurnMotorPosition);
+    SmartDashboard.putNumber("Turn Motor Velocity", roundedTurnMotorVelocity);
+    //Displays The Turn Motor Data Into A Smart Dashboard
+
+
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -120,18 +131,22 @@ public class Robot extends TimedRobot {
   private double deadBand(double y) {
     if (Math.abs(y) < 0.2) {
       return (0);
-    } else if (y < 0.7 && y >= 0.2) {
-      return ((y - 0.2) * 0.6);
-    } else if (y > -0.7 && y <= -0.2) {
-      return ((y + 0.2) * 0.6);
-    } else if (y <= 1.0 && y >= 0.7) {
-      return ((y * (7 / 3) - (4 / 3)));
-    } else if (y >= -1.0 && y <= -0.7) {
-      return ((y * (7 / 3) + (4 / 3)));
+    } else if (Math.abs(y) >= 0.2 && Math.abs(y) < 0.7) {
+      if (y > 0) {
+        return ((y - 0.2) * 0.6);
+      } else {
+        return ((y + 0.2) * 0.6);
+      }
+    } else if (Math.abs(y) >= 0.7 && Math.abs(y) <= 1.0) {
+      if (y > 0) {
+        return ((y * (7 / 3) - (4 / 3)));
+      } else {
+        return ((y * (7 / 3) - (4 / 3)));
+      }
     } else {
-      return (0);
+      return 0.0;
     }
-  }
 
+  }
 }
 
