@@ -13,7 +13,6 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
-
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -25,17 +24,26 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Robot extends TimedRobot {
 
+  /*
+   * Joystic and Deadband Calculator
+   */
+  private XboxController xboxController;
+
   private static final double DEADBAND = 0.2;
   private static final double SLOW_X = 0.7;
   private static final double SLOW_Y = .4;
 
+  // Calculate the slope and intercept for each of the
+  // slow zone and fast zone line segments.
   private static final double SLOW_M = SLOW_Y / (SLOW_X - DEADBAND);
   private static final double SLOW_B = -SLOW_M * DEADBAND;
 
   private static final double FAST_M = (1.0 - SLOW_Y) / (1.0 - SLOW_X);
   private static final double FAST_B = -(FAST_M * SLOW_X) + SLOW_Y;
 
-  private XboxController xboxController;
+  /*
+   * Motors and sensors
+   */
   private SparkMax driveMotor;
   private SparkMax turnMotor;
   private CANcoder angleEncoder;
@@ -50,7 +58,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     xboxController = new XboxController(0);
 
-    // Reset the speed controllers
+    // Create a config to apply to all of the SparkMax controllers
     SparkMaxConfig sparkMaxConfig = new SparkMaxConfig();
     sparkMaxConfig.encoder.positionConversionFactor(1.0);
     sparkMaxConfig.encoder.velocityConversionFactor(1.0);
@@ -65,7 +73,9 @@ public class Robot extends TimedRobot {
     turnMotor.configure(
         sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
+    // Absolute encoder - used for startup position
     angleEncoder = new CANcoder(32);
+
     CANcoderConfiguration cancoderConfig = new CANcoderConfiguration();
     cancoderConfig.MagnetSensor.MagnetOffset = 0.0;
     cancoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
@@ -146,16 +156,17 @@ public class Robot extends TimedRobot {
   @Override
   public void simulationPeriodic() {}
 
-  private double deadband(double value) {
+  private double deadband(double x) {
 
-    if (Math.abs(value) < DEADBAND) {
+    if (Math.abs(x) < DEADBAND) {
       return 0.0;
     }
 
-    if (Math.abs(value) < SLOW_X) {
-      return (Math.abs(value) * SLOW_M + SLOW_B) * Math.signum(value);
+    // y = mx + b
+    if (Math.abs(x) < SLOW_X) {
+      return (SLOW_M * Math.abs(x) + SLOW_B) * Math.signum(x);
     }
 
-    return (Math.abs(value) * FAST_M + FAST_B) * Math.signum(value);
+    return (FAST_M * Math.abs(x) + FAST_B) * Math.signum(x);
   }
 }
