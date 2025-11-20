@@ -5,9 +5,6 @@
 package frc.robot;
 
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-
-import java.security.Key;
-
 import com.revrobotics.spark.SparkMax;
 
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -129,24 +126,11 @@ public class Robot extends TimedRobot {
   }
 
   private double deadBand(double y) {
-    if (Math.abs(y) < 0.2) {
-      return (0);
-    } else if (Math.abs(y) >= 0.2 && Math.abs(y) < 0.7) {
-      if (y > 0) {
-        return ((y - 0.2) * 0.6);
-      } else {
-        return ((y + 0.2) * 0.6);
-      }
-    } else if (Math.abs(y) >= 0.7 && Math.abs(y) <= 1.0) {
-      if (y > 0) {
-        return ((y * (7 / 3) - (4 / 3)));
-      } else {
-        return ((y * (7 / 3) - (4 / 3)));
-      }
-    } else {
-      return 0.0;
-    }
 
+    if (Math.abs(y) < 0.2)return (0);
+    else if (Math.abs(y) >= 0.2 && Math.abs(y) < 0.7) return ((y*0.6)-(0.12*Math.signum(y)));
+    else if (Math.abs(y) >= 0.7 && Math.abs(y) <= 1.0) return ((y*7/3)+((4/3)*Math.signum(y)));
+    else return 0.0;
   }
 }
 
