@@ -13,6 +13,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -93,16 +94,11 @@ public class Robot extends TimedRobot {
   public void robotPeriodic() {
     // Display the current motor speed and position
     SmartDashboard.putNumber(
-        "Angle Encoder",
-        Math.round(angleEncoder.getAbsolutePosition().getValueAsDouble() * 100) / 100.0);
-    SmartDashboard.putNumber(
-        "Turn Motor Speed", Math.round(turnMotor.getEncoder().getVelocity() * 100) / 100.0);
-    SmartDashboard.putNumber(
-        "Turn Motor Position", Math.round(turnMotor.getEncoder().getPosition() * 100) / 100.0);
-    SmartDashboard.putNumber(
-        "Drive Motor Speed", Math.round(driveMotor.getEncoder().getVelocity() * 100) / 100.0);
-    SmartDashboard.putNumber(
-        "Drive Motor Position", Math.round(driveMotor.getEncoder().getPosition() * 100) / 100.0);
+        "Angle Encoder", round2(angleEncoder.getAbsolutePosition().getValueAsDouble()));
+    SmartDashboard.putNumber("Turn Motor Speed", round2(turnMotor.getEncoder().getVelocity()));
+    SmartDashboard.putNumber("Turn Motor Position", round2(turnMotor.getEncoder().getPosition()));
+    SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
+    SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -168,5 +164,10 @@ public class Robot extends TimedRobot {
     }
 
     return (FAST_M * Math.abs(x) + FAST_B) * Math.signum(x);
+  }
+
+  /* round to two decimal places (for display) */
+  private double round2(double value) {
+    return Math.round(value * 100) / 100.0;
   }
 }
