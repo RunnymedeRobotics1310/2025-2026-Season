@@ -152,6 +152,12 @@ public class Robot extends TimedRobot {
   @Override
   public void simulationPeriodic() {}
 
+  /**
+   * Deadband the input value
+   *
+   * @param x input value
+   * @return deadbanded output value
+   */
   private double deadband(double x) {
 
     if (Math.abs(x) < DEADBAND) {
@@ -166,7 +172,7 @@ public class Robot extends TimedRobot {
     return (FAST_M * Math.abs(x) + FAST_B) * Math.signum(x);
   }
 
-  /* round to two decimal places (for display) */
+  /** round to two decimal places (for display) */
   private double round2(double value) {
     return Math.round(value * 100) / 100.0;
   }
