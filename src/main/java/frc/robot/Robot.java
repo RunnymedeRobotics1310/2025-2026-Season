@@ -48,6 +48,12 @@ public class Robot extends TimedRobot {
   private SparkMax turnMotor;
   private CANcoder angleEncoder;
 
+  /*
+   * PID Constants
+   */
+  double MAX_RPM = 6000.0; // max RPM for the motor
+  double Kp = 1; // Kp is the proportional gain constant
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -188,18 +194,19 @@ public class Robot extends TimedRobot {
   }
 
   private void speedPidControl(double setPoint, SparkMax motor) {
-
-    double MAX_RPM = 6000.0;
-    double Kp = 1; // Kp is the proportional gain constant
     double currentSpeed = motor.getEncoder().getVelocity();
-    double error = (setPoint - currentSpeed) / MAX_RPM;
+    double error = (setPoint - currentSpeed) / MAX_RPM; // Normalize error
     motor.set((setPoint / MAX_RPM) + (error * Kp));
   }
 
   /** Return the current angle based on the motor encoder */
+  // FIXME This function only needs to pass in the motor.
   private double angleDegrees(double turnPos, SparkMax motor) {
     // The Mk4i Swerve Module has a gear ratio of 150:7
     double angle = turnPos / (150.0 / 7.0) * 360.0;
+
+    // FIXME Normalize the angle to 0-360 degrees (what if it is negative?)
+
     return angle;
   }
 }
