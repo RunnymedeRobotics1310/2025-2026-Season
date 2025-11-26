@@ -13,7 +13,6 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
-
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -57,6 +56,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
+
     xboxController = new XboxController(0);
 
     // Create a config to apply to all of the SparkMax controllers
@@ -99,6 +99,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Turn Motor Position", round2(turnMotor.getEncoder().getPosition()));
     SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
     SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
+    SmartDashboard.putNumber(
+        "Turn Motor Angle", angleDegrees(turnMotor.getEncoder().getPosition(), turnMotor));
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -117,10 +119,19 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
 
-    // Set the drive speed based on the left Y axis with deadband applied
-    double leftY = -xboxController.getLeftY();
-    double speed = deadband(leftY);
-    driveMotor.set(speed);
+    if (xboxController.getAButton()) {
+      // Set the speed to exactly 200rpm
+      speedPidControl(200, driveMotor);
+    } else if (xboxController.getBButton()) {
+      speedPidControl(2000, driveMotor);
+    } else if (xboxController.getYButton()) {
+      speedPidControl(5000, driveMotor);
+    } else {
+      // Set the drive speed based on the left Y axis with deadband applied
+      double leftY = -xboxController.getLeftY();
+      double speed = deadband(leftY);
+      driveMotor.set(speed);
+    }
 
     // Set the turn speed based on the right X axis with deadband applied
     double rightX = xboxController.getRightX();
@@ -163,7 +174,6 @@ public class Robot extends TimedRobot {
     if (Math.abs(x) < DEADBAND) {
       return 0.0;
     }
-
     // y = mx + b
     if (Math.abs(x) < SLOW_X) {
       return (SLOW_M * Math.abs(x) + SLOW_B) * Math.signum(x);
@@ -175,5 +185,21 @@ public class Robot extends TimedRobot {
   /** round to two decimal places (for display) */
   private double round2(double value) {
     return Math.round(value * 100) / 100.0;
+  }
+
+  private void speedPidControl(double setPoint, SparkMax motor) {
+
+    double MAX_RPM = 6000.0;
+    double Kp = 1; // Kp is the proportional gain constant
+    double currentSpeed = motor.getEncoder().getVelocity();
+    double error = (setPoint - currentSpeed) / MAX_RPM;
+    motor.set((setPoint / MAX_RPM) + (error * Kp));
+  }
+
+  /** Return the current angle based on the motor encoder */
+  private double angleDegrees(double turnPos, SparkMax motor) {
+    // The Mk4i Swerve Module has a gear ratio of 150:7
+    double angle = turnPos / (150.0 / 7.0) * 360.0;
+    return angle;
   }
 }
