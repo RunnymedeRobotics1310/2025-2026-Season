@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
+import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -20,14 +23,18 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class Robot extends TimedRobot {
   private XboxController xboxController;
-  private SparkMax speedMotor;
+  private SparkMax driveMotor;
   private SparkMax turnMotor;
+  private CANcoder angleEncoder;
 
   private double DEADZONE = 0.2;
   private double SLOWZONE = 0.7;
 
   private double turnMotorZero;
   private double driveMototZero;
+
+  double MAX_RPM = 6000.0; // max RPM for the motor
+  double Kp = 1; // Kp is the proportional gain constant
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -38,11 +45,17 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     xboxController = new XboxController(0); // Initialize XboxController on port 0
-    speedMotor = new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
+    driveMotor = new SparkMax(30, MotorType.kBrushless); // Initialize SparkMax on port 30 for NEO motor
     turnMotor = new SparkMax(31, MotorType.kBrushless);
 
     turnMotorZero = turnMotor.getEncoder().getPosition();
 
+    angleEncoder = new CANcoder(32);
+
+    CANcoderConfiguration cancoderConfig = new CANcoderConfiguration();
+    cancoderConfig.MagnetSensor.MagnetOffset = 0.0;
+    cancoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
+    angleEncoder.getConfigurator().apply(cancoderConfig);
 
     SparkMaxConfig brakeSparkConfig = new SparkMaxConfig();
     brakeSparkConfig
@@ -64,8 +77,14 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
 
-    SmartDashboard.putNumber("Trun speed", turnMotor.getEncoder().getVelocity());
-    SmartDashboard.putNumber("Turn angle", (turnMotor.getEncoder().getPosition() - turnMotorZero) * 360);
+    SmartDashboard.putNumber(
+        "Angle Encoder", round2(angleEncoder.getAbsolutePosition().getValueAsDouble()));
+    SmartDashboard.putNumber("Turn Motor Speed", round2(turnMotor.getEncoder().getVelocity()));
+    SmartDashboard.putNumber("Turn Motor Position", round2(turnMotor.getEncoder().getPosition()));
+    SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
+    SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
+    SmartDashboard.putNumber(
+        "Turn Motor Angle", angleDegrees(turnMotor.getEncoder().getPosition(), turnMotor));
 
 
   }
@@ -85,15 +104,24 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    double leftY = -xboxController.getLeftY();
-    double rightX = xboxController.getRightX();
-
-    if (rightX <= 0.05 && rightX >= -0.05) {
-      rightX = 0;
+    if (xboxController.getAButton()) {
+      // Set the speed to exactly 200rpm
+      speedPidControl(200, driveMotor);
+    } else if (xboxController.getBButton()) {
+      speedPidControl(2000, driveMotor);
+    } else if (xboxController.getYButton()) {
+      speedPidControl(5000, driveMotor);
+    } else {
+      // Set the drive speed based on the left Y axis with deadband applied
+      double leftY = -xboxController.getLeftY();
+      double speed = deadband(leftY);
+      driveMotor.set(speed);
     }
 
-    speedMotor.set(deadband(leftY));
-    turnMotor.set(deadband(rightX));
+    // Set the turn speed based on the right X axis with deadband applied
+    double rightX = xboxController.getRightX();
+    double turn = deadband(rightX);
+    turnMotor.set(turn);
 
   }
   
@@ -134,4 +162,24 @@ public class Robot extends TimedRobot {
       return (2.3 * Math.abs(value) - 1.3) * Math.signum(value);
     }
   }
+
+  private void speedPidControl(double setPoint, SparkMax motor) {
+    double currentSpeed = motor.getEncoder().getVelocity();
+    double error = (setPoint - currentSpeed) / MAX_RPM; // Normalize error
+    motor.set((setPoint / MAX_RPM) + (error * Kp));
+  }
+   
+  private double angleDegrees(double turnPos, SparkMax motor) {
+    // The Mk4i Swerve Module has a gear ratio of 150:7
+    double angle = turnPos / (150.0 / 7.0) * 360.0;
+
+    // FIXME Normalize the angle to 0-360 degrees (what if it is negative?)
+
+    return angle;
+  }
+
+  private double round2(double value) {
+    return Math.round(value * 100) / 100.0;
+  }
+
 }
