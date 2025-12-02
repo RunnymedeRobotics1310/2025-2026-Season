@@ -13,6 +13,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -52,7 +53,7 @@ public class Robot extends TimedRobot {
    * PID Constants
    */
   double MAX_RPM = 6000.0; // max RPM for the motor
-  double Kp = 1; // Kp is the proportional gain constant
+  double Kp = .5; // Kp is the proportional gain constant
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -99,14 +100,12 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     // Display the current motor speed and position
-    SmartDashboard.putNumber(
-        "Angle Encoder", round2(angleEncoder.getAbsolutePosition().getValueAsDouble()));
+    SmartDashboard.putNumber("Angle Encoder", encoderAngleDegrees(angleEncoder, -153.4));
     SmartDashboard.putNumber("Turn Motor Speed", round2(turnMotor.getEncoder().getVelocity()));
     SmartDashboard.putNumber("Turn Motor Position", round2(turnMotor.getEncoder().getPosition()));
     SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
     SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
-    SmartDashboard.putNumber(
-        "Turn Motor Angle", angleDegrees(turnMotor.getEncoder().getPosition(), turnMotor));
+    SmartDashboard.putNumber("Turn Motor Angle", motorAngleDegrees(turnMotor, 16.8));
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -138,11 +137,14 @@ public class Robot extends TimedRobot {
       double speed = deadband(leftY);
       driveMotor.set(speed);
     }
-
-    // Set the turn speed based on the right X axis with deadband applied
-    double rightX = xboxController.getRightX();
-    double turn = deadband(rightX);
-    turnMotor.set(turn);
+    if (xboxController.getPOV() >= 0) {
+      anglePidControl(xboxController.getPOV(), turnMotor);
+    } else {
+      // Set the turn speed based on the right X axis with deadband applied
+      double rightX = xboxController.getRightX();
+      double turn = deadband(rightX);
+      turnMotor.set(turn);
+    }
   }
 
   /** This function is called once when the robot is disabled. */
@@ -199,14 +201,49 @@ public class Robot extends TimedRobot {
     motor.set((setPoint / MAX_RPM) + (error * Kp));
   }
 
+  private void anglePidControl(int setAngle, SparkMax motor) {
+    double currentAngle = encoderAngleDegrees(angleEncoder, -153.4);
+    double error = setAngle - currentAngle;
+    if (Math.abs(error) >= 3) {
+      if (error > 0) {
+        motor.set(0.8);
+      } else {
+        motor.set(-0.8);
+      }
+    }
+  }
+
+  private double encoderAngleDegrees(CANcoder angleEncoder, double offsetDegrees) {
+    double rotations = angleEncoder.getAbsolutePosition().getValueAsDouble();
+
+    double angle = rotations * 360.0;
+
+    angle = angle % 360;
+
+    angle += offsetDegrees;
+
+    if (angle < 0) {
+      angle += 360.0;
+    }
+    return round2(angle);
+  }
+
   /** Return the current angle based on the motor encoder */
-  // FIXME This function only needs to pass in the motor.
-  private double angleDegrees(double turnPos, SparkMax motor) {
+  private double motorAngleDegrees(SparkMax motor, double offset) {
+
     // The Mk4i Swerve Module has a gear ratio of 150:7
-    double angle = turnPos / (150.0 / 7.0) * 360.0;
+    double angle = motor.getEncoder().getPosition() / (150.0 / 7.0) * 360.0;
 
-    // FIXME Normalize the angle to 0-360 degrees (what if it is negative?)
+    angle += offset;
 
-    return angle;
+    angle = round2(angle);
+
+    angle = angle % 360.0;
+
+    if (angle < 0) {
+      angle += 360.0;
+    }
+
+    return round2(angle);
   }
 }
