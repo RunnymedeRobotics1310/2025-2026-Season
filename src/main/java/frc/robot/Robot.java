@@ -4,6 +4,7 @@
 
 package frc.robot;
 
+import com.ctre.phoenix.sensors.CANCoder;
 import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
 import com.ctre.phoenix6.signals.SensorDirectionValue;
@@ -84,7 +85,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
     SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
     SmartDashboard.putNumber(
-        "Turn Motor Angle", angleDegrees(turnMotor.getEncoder().getPosition(), turnMotor));
+        "Turn Motor Angle", angleDegrees(turnMotor));
 
 
   }
@@ -169,17 +170,21 @@ public class Robot extends TimedRobot {
     motor.set((setPoint / MAX_RPM) + (error * Kp));
   }
    
-  private double angleDegrees(double turnPos, SparkMax motor) {
+  private double angleDegrees(SparkMax motor) {
     // The Mk4i Swerve Module has a gear ratio of 150:7
-    double angle = turnPos / (150.0 / 7.0) * 360.0;
+    double angle = motor.getEncoder().getPosition() / (150.0 / 7.0) * 360.0;
 
-    // FIXME Normalize the angle to 0-360 degrees (what if it is negative?)
+    double normalized_angle = (angle % 360 + 360) % 360;
 
-    return angle;
+    return normalized_angle;
   }
 
   private double round2(double value) {
     return Math.round(value * 100) / 100.0;
+  }
+
+  private double getEncoderAngle(CANcoder encoder) {
+    return encoder.getAbsolutePosition().getValueAsDouble();
   }
 
 }
