@@ -4,7 +4,12 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
@@ -69,8 +74,6 @@ public class Robot extends TimedRobot {
     sparkMaxConfig.encoder.velocityConversionFactor(1.0);
     sparkMaxConfig.inverted(false);
     sparkMaxConfig.idleMode(IdleMode.kBrake);
-
-    class = 
 
     driveMotor = new SparkMax(30, MotorType.kBrushless);
     driveMotor.configure(
