@@ -4,12 +4,7 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
@@ -74,6 +69,8 @@ public class Robot extends TimedRobot {
     sparkMaxConfig.encoder.velocityConversionFactor(1.0);
     sparkMaxConfig.inverted(false);
     sparkMaxConfig.idleMode(IdleMode.kBrake);
+
+    class = 
 
     driveMotor = new SparkMax(30, MotorType.kBrushless);
     driveMotor.configure(
@@ -146,6 +143,7 @@ public class Robot extends TimedRobot {
     }
     if (xboxController.getPOV() >= 0) {
       anglePidControl(xboxController.getPOV(), turnMotor);
+
     } else {
       // Set the turn speed based on the right X axis with deadband applied
       double rightX = xboxController.getRightX();
@@ -211,12 +209,14 @@ public class Robot extends TimedRobot {
   private void anglePidControl(int setAngle, SparkMax motor) {
     double currentAngle = encoderAngleDegrees(angleEncoder);
     double error = setAngle - currentAngle;
+    if (Math.abs(error) > 180) {
+      error -= 360 * Math.signum(error);
+    }
+
     if (Math.abs(error) >= 3) {
-      if (error > 0) {
-        motor.set(0.8);
-      } else {
-        motor.set(-0.8);
-      }
+      motor.set(error / 180.0);
+    } else {
+      motor.set(0.0);
     }
   }
 
