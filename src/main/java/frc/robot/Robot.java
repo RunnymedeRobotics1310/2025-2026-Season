@@ -49,6 +49,8 @@ public class Robot extends TimedRobot {
   private SparkMax turnMotor;
   private CANcoder angleEncoder;
 
+  private static final double CANCODER_OFFSET_DEGREES = -153.4;
+  private double turnMotorAngleOffsetDegrees = 0;
   /*
    * PID Constants
    */
@@ -88,6 +90,11 @@ public class Robot extends TimedRobot {
     cancoderConfig.MagnetSensor.MagnetOffset = 0.0;
     cancoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
     angleEncoder.getConfigurator().apply(cancoderConfig);
+
+    // calculate the offset for the turn motor angle based on the
+    // magnetic encoder.
+    turnMotorAngleOffsetDegrees = 0;
+    turnMotorAngleOffsetDegrees = -motorAngleDegrees(turnMotor);
   }
 
   /**
@@ -100,12 +107,12 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     // Display the current motor speed and position
-    SmartDashboard.putNumber("Angle Encoder", encoderAngleDegrees(angleEncoder, -153.4));
+    SmartDashboard.putNumber("Angle Encoder", encoderAngleDegrees(angleEncoder));
     SmartDashboard.putNumber("Turn Motor Speed", round2(turnMotor.getEncoder().getVelocity()));
     SmartDashboard.putNumber("Turn Motor Position", round2(turnMotor.getEncoder().getPosition()));
     SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
     SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
-    SmartDashboard.putNumber("Turn Motor Angle", motorAngleDegrees(turnMotor, 16.8));
+    SmartDashboard.putNumber("Turn Motor Angle", motorAngleDegrees(turnMotor));
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -202,7 +209,7 @@ public class Robot extends TimedRobot {
   }
 
   private void anglePidControl(int setAngle, SparkMax motor) {
-    double currentAngle = encoderAngleDegrees(angleEncoder, -153.4);
+    double currentAngle = encoderAngleDegrees(angleEncoder);
     double error = setAngle - currentAngle;
     if (Math.abs(error) >= 3) {
       if (error > 0) {
@@ -213,14 +220,14 @@ public class Robot extends TimedRobot {
     }
   }
 
-  private double encoderAngleDegrees(CANcoder angleEncoder, double offsetDegrees) {
+  private double encoderAngleDegrees(CANcoder angleEncoder) {
     double rotations = angleEncoder.getAbsolutePosition().getValueAsDouble();
 
     double angle = rotations * 360.0;
 
-    angle = angle % 360;
+    angle += CANCODER_OFFSET_DEGREES;
 
-    angle += offsetDegrees;
+    angle = angle % 360;
 
     if (angle < 0) {
       angle += 360.0;
@@ -229,12 +236,12 @@ public class Robot extends TimedRobot {
   }
 
   /** Return the current angle based on the motor encoder */
-  private double motorAngleDegrees(SparkMax motor, double offset) {
+  private double motorAngleDegrees(SparkMax motor) {
 
     // The Mk4i Swerve Module has a gear ratio of 150:7
     double angle = motor.getEncoder().getPosition() / (150.0 / 7.0) * 360.0;
 
-    angle += offset;
+    angle += turnMotorAngleOffsetDegrees;
 
     angle = round2(angle);
 
