@@ -127,11 +127,11 @@ public class SwerveModule {
     // }
   }
 
-  public void setSpeed() {
+  public void setSpeed(double speed) {
     // FIXME Set the pid setpoint
   }
 
-  public void setAngle() {
+  public void setAngle(double angle) {
     // FIXME Set the angle setpoint
   }
 

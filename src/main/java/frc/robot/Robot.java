@@ -4,19 +4,8 @@
 
 package frc.robot;
 
-import com.ctre.phoenix6.configs.CANcoderConfiguration;
-import com.ctre.phoenix6.hardware.CANcoder;
-import com.ctre.phoenix6.signals.SensorDirectionValue;
-import com.revrobotics.spark.SparkBase.PersistMode;
-import com.revrobotics.spark.SparkBase.ResetMode;
-import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
-import com.revrobotics.spark.config.SparkMaxConfig;
-
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -43,19 +32,14 @@ public class Robot extends TimedRobot {
   private static final double FAST_B = -(FAST_M * SLOW_X) + SLOW_Y;
 
   /*
-   * Motors and sensors
+   * Swerve Modules
    */
-  private SparkMax driveMotor;
-  private SparkMax turnMotor;
-  private CANcoder angleEncoder;
+  private SwerveModule frontRightSwerveModule;
 
-  private static final double CANCODER_OFFSET_DEGREES = -153.4;
-  private double turnMotorAngleOffsetDegrees = 0;
   /*
-   * PID Constants
+   * Constants
    */
   double MAX_RPM = 6000.0; // max RPM for the motor
-  double Kp = .5; // Kp is the proportional gain constant
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -68,33 +52,8 @@ public class Robot extends TimedRobot {
 
     xboxController = new XboxController(0);
 
-    // Create a config to apply to all of the SparkMax controllers
-    SparkMaxConfig sparkMaxConfig = new SparkMaxConfig();
-    sparkMaxConfig.encoder.positionConversionFactor(1.0);
-    sparkMaxConfig.encoder.velocityConversionFactor(1.0);
-    sparkMaxConfig.inverted(false);
-    sparkMaxConfig.idleMode(IdleMode.kBrake);
-
-    driveMotor = new SparkMax(30, MotorType.kBrushless);
-    driveMotor.configure(
-        sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-
-    turnMotor = new SparkMax(31, MotorType.kBrushless);
-    turnMotor.configure(
-        sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-
-    // Absolute encoder - used for startup position
-    angleEncoder = new CANcoder(32);
-
-    CANcoderConfiguration cancoderConfig = new CANcoderConfiguration();
-    cancoderConfig.MagnetSensor.MagnetOffset = 0.0;
-    cancoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
-    angleEncoder.getConfigurator().apply(cancoderConfig);
-
-    // calculate the offset for the turn motor angle based on the
-    // magnetic encoder.
-    turnMotorAngleOffsetDegrees = 0;
-    turnMotorAngleOffsetDegrees = -motorAngleDegrees(turnMotor);
+    // FIXME
+    frontRightSwerveModule = new SwerveModule("FrontRight", 0, 0, 0, 0, 0);
   }
 
   /**
@@ -106,13 +65,8 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    // Display the current motor speed and position
-    SmartDashboard.putNumber("Angle Encoder", encoderAngleDegrees(angleEncoder));
-    SmartDashboard.putNumber("Turn Motor Speed", round2(turnMotor.getEncoder().getVelocity()));
-    SmartDashboard.putNumber("Turn Motor Position", round2(turnMotor.getEncoder().getPosition()));
-    SmartDashboard.putNumber("Drive Motor Speed", round2(driveMotor.getEncoder().getVelocity()));
-    SmartDashboard.putNumber("Drive Motor Position", round2(driveMotor.getEncoder().getPosition()));
-    SmartDashboard.putNumber("Turn Motor Angle", motorAngleDegrees(turnMotor));
+
+    frontRightSwerveModule.periodic();
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -133,7 +87,7 @@ public class Robot extends TimedRobot {
 
     if (xboxController.getAButton()) {
       // Set the speed to exactly 200rpm
-      speedPidControl(200, driveMotor);
+      frontRightSwerveModule.setSpeed(200.0);
     } else if (xboxController.getBButton()) {
       speedPidControl(2000, driveMotor);
     } else if (xboxController.getYButton()) {
@@ -142,7 +96,7 @@ public class Robot extends TimedRobot {
       // Set the drive speed based on the left Y axis with deadband applied
       double leftY = -xboxController.getLeftY();
       double speed = deadband(leftY);
-      driveMotor.set(speed);
+      frontRightSwerveModule.setSpeed(speed);
     }
     if (xboxController.getPOV() >= 0) {
       anglePidControl(xboxController.getPOV(), turnMotor);
@@ -196,64 +150,5 @@ public class Robot extends TimedRobot {
     }
 
     return (FAST_M * Math.abs(x) + FAST_B) * Math.signum(x);
-  }
-
-  /** round to two decimal places (for display) */
-  private double round2(double value) {
-    return Math.round(value * 100) / 100.0;
-  }
-
-  private void speedPidControl(double setPoint, SparkMax motor) {
-    double currentSpeed = motor.getEncoder().getVelocity();
-    double error = (setPoint - currentSpeed) / MAX_RPM; // Normalize error
-    motor.set((setPoint / MAX_RPM) + (error * Kp));
-  }
-
-  private void anglePidControl(int setAngle, SparkMax motor) {
-    double currentAngle = encoderAngleDegrees(angleEncoder);
-    double error = setAngle - currentAngle;
-    if (Math.abs(error) > 180) {
-      error -= 360 * Math.signum(error);
-    }
-
-    if (Math.abs(error) >= 3) {
-      motor.set(error / 180.0);
-    } else {
-      motor.set(0.0);
-    }
-  }
-
-  private double encoderAngleDegrees(CANcoder angleEncoder) {
-    double rotations = angleEncoder.getAbsolutePosition().getValueAsDouble();
-
-    double angle = rotations * 360.0;
-
-    angle += CANCODER_OFFSET_DEGREES;
-
-    angle = angle % 360;
-
-    if (angle < 0) {
-      angle += 360.0;
-    }
-    return round2(angle);
-  }
-
-  /** Return the current angle based on the motor encoder */
-  private double motorAngleDegrees(SparkMax motor) {
-
-    // The Mk4i Swerve Module has a gear ratio of 150:7
-    double angle = motor.getEncoder().getPosition() / (150.0 / 7.0) * 360.0;
-
-    angle += turnMotorAngleOffsetDegrees;
-
-    angle = round2(angle);
-
-    angle = angle % 360.0;
-
-    if (angle < 0) {
-      angle += 360.0;
-    }
-
-    return round2(angle);
   }
 }
