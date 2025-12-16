@@ -21,7 +21,13 @@ public class Robot extends TimedRobot {
   /*
    * Swerve Modules
    */
+  private SwerveModule rearRightSwerveModule;
+
   private SwerveModule frontRightSwerveModule;
+
+  private SwerveModule rearLeftSwerveModule;
+
+  private SwerveModule frontLeftSwerveModule;
 
   /*
    * Constants
@@ -39,8 +45,10 @@ public class Robot extends TimedRobot {
 
     gameController = new GameController(0);
 
-    // FIXME
-    frontRightSwerveModule = new SwerveModule("FrontRight", 0, 0, 0, 0, 0);
+    rearRightSwerveModule = new SwerveModule("rearRight", 30, 31, 32, MAX_RPM, -150.6);
+    frontRightSwerveModule = new SwerveModule("frontRight", 20, 21, 22, MAX_RPM, -349.19);
+    rearLeftSwerveModule = new SwerveModule("rearLeft", 35, 36, 37, MAX_RPM, -25.05);
+    frontLeftSwerveModule = new SwerveModule("frontLeft", 10, 11, 12, MAX_RPM, -137.4);
   }
 
   /**
@@ -53,7 +61,10 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
 
+    rearRightSwerveModule.periodic();
     frontRightSwerveModule.periodic();
+    rearLeftSwerveModule.periodic();
+    frontLeftSwerveModule.periodic();
   }
 
   /** This function is called once when autonomous is enabled. */
@@ -74,26 +85,43 @@ public class Robot extends TimedRobot {
 
     if (gameController.getAButton()) {
       // Set the speed to exactly 200rpm
-      frontRightSwerveModule.setSpeed(200.0);
+      setSpeed(200.0);
     } else if (gameController.getBButton()) {
-      speedPidControl(2000, driveMotor);
+      setSpeed(2000.0);
     } else if (gameController.getYButton()) {
-      speedPidControl(5000, driveMotor);
-    } else {
-      // Set the drive speed based on the left Y axis with deadband applied
-      double leftY = -gameController.getLeftY();
-      double speed = deadband(leftY);
-      frontRightSwerveModule.setSpeed(speed);
-    }
-    if (gameController.getPOV() >= 0) {
-      anglePidControl(gameController.getPOV(), turnMotor);
+      setSpeed(5000.0);
 
     } else {
-      // Set the turn speed based on the right X axis with deadband applied
-      double rightX = gameController.getRightX();
-      double turn = deadband(rightX);
-      turnMotor.set(turn);
+      // Set the drive speed based on the left Y axis with deadband applied
+      double speed = gameController.getLeftY();
+      setSpeed(MAX_RPM * speed);
     }
+    if (gameController.getPOV() >= 0) {
+      setAngle(gameController.getPOV());
+
+    } else {
+      // Set the turn angle based on the angle of the right joystick
+      double rightX = gameController.getRightX();
+      double rightY = gameController.getRightY();
+      double angleRad = Math.atan2(rightY, rightX);
+      double angleDeg = Math.toDegrees(angleRad) - 90;
+      if (angleDeg < 0) angleDeg += 360;
+      if (rightX != 0 || rightY != 0) setAngle(angleDeg);
+    }
+  }
+
+  private void setSpeed(double speed) {
+    frontLeftSwerveModule.setSpeed(speed);
+    rearLeftSwerveModule.setSpeed(speed);
+    frontRightSwerveModule.setSpeed(speed);
+    rearRightSwerveModule.setSpeed(speed);
+  }
+
+  private void setAngle(double angle) {
+    frontLeftSwerveModule.setAngle(angle);
+    rearLeftSwerveModule.setAngle(angle);
+    frontRightSwerveModule.setAngle(angle);
+    rearRightSwerveModule.setAngle(angle);
   }
 
   /** This function is called once when the robot is disabled. */

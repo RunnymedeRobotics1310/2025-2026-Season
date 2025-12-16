@@ -4,8 +4,15 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.configs.CANcoderConfiguration;
 import com.ctre.phoenix6.hardware.CANcoder;
+import com.ctre.phoenix6.signals.SensorDirectionValue;
+import com.revrobotics.spark.SparkBase.PersistMode;
+import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
@@ -25,12 +32,11 @@ public class SwerveModule {
   private SparkMax turnMotor;
   private CANcoder angleEncoder;
 
-  // PID constants
-  private final double cancoderOffsetDegrees, maxDriveSpeedRpm;
-
   /*
-   * PID Constants
+   * PID Values
    */
+  private double angleSetpoint, speedSetpoint;
+  private final double cancoderOffsetDegrees, maxDriveSpeedRpm;
   double Kp = .5; // Kp is the proportional gain constant
 
   /** SwerveModule definition for one corner of the robot */
@@ -46,45 +52,42 @@ public class SwerveModule {
     this.cancoderOffsetDegrees = cancoderOffsetDegrees;
     this.maxDriveSpeedRpm = maxDriveSpeedRpm;
 
-    // FIXME initialize all motors and sensors
+    // Initialize the swerve module
     init(driveMotorCanId, turnMotorCanId, angleEncoderCanId);
   }
 
   private void init(int driveMotorCanId, int turnMotorCanId, int angleEncoderCanId) {
 
-    // FIXME initialize the motors
-
-    // Some example intialization code
-    //
     // Create a config to apply to all of the SparkMax controllers
-    // SparkMaxConfig sparkMaxConfig = new SparkMaxConfig();
-    // sparkMaxConfig.encoder.positionConversionFactor(1.0);
-    // sparkMaxConfig.encoder.velocityConversionFactor(1.0);
-    // sparkMaxConfig.inverted(false);
-    // sparkMaxConfig.idleMode(IdleMode.kBrake);
+    SparkMaxConfig sparkMaxConfig = new SparkMaxConfig();
+    sparkMaxConfig.encoder.positionConversionFactor(1.0);
+    sparkMaxConfig.encoder.velocityConversionFactor(1.0);
+    sparkMaxConfig.inverted(false);
+    sparkMaxConfig.idleMode(IdleMode.kBrake);
 
-    // driveMotor = new SparkMax(30, MotorType.kBrushless);
-    // driveMotor.configure(
-    //     sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    driveMotor = new SparkMax(driveMotorCanId, MotorType.kBrushless);
+    driveMotor.configure(
+        sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    // turnMotor = new SparkMax(31, MotorType.kBrushless);
-    // turnMotor.configure(
-    //     sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    turnMotor = new SparkMax(turnMotorCanId, MotorType.kBrushless);
+    turnMotor.configure(
+        sparkMaxConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    // // Absolute encoder - used for startup position
-    // angleEncoder = new CANcoder(32);
+    // Absolute encoder - used for startup position
+    angleEncoder = new CANcoder(angleEncoderCanId);
 
-    // CANcoderConfiguration cancoderConfig = new CANcoderConfiguration();
-    // cancoderConfig.MagnetSensor.MagnetOffset = 0.0;
-    // cancoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
-    // angleEncoder.getConfigurator().apply(cancoderConfig);
+    CANcoderConfiguration cancoderConfig = new CANcoderConfiguration();
+    cancoderConfig.MagnetSensor.MagnetOffset = 0.0;
+    cancoderConfig.MagnetSensor.SensorDirection = SensorDirectionValue.Clockwise_Positive;
 
+    angleEncoder.getConfigurator().apply(cancoderConfig);
   }
 
   public void periodic() {
 
     // Run the PID controllers.
-    // FIXME
+    speedPidControl();
+    anglePidControl();
 
     // Display the current motor speed and position
     SmartDashboard.putNumber(moduleName + " Angle", round2(getAngle()));
@@ -94,7 +97,7 @@ public class SwerveModule {
 
   public double getSpeed() {
 
-    return 0; // FIXME
+    return driveMotor.getEncoder().getVelocity();
   }
 
   public void resetDistance() {
@@ -103,36 +106,32 @@ public class SwerveModule {
 
   public double getDistance() {
 
-    return 0; // FIXME
+    return driveMotor.getEncoder().getPosition();
   }
 
   public double getAngle() {
 
-    return 0; // FIXME
+    double rotations = angleEncoder.getAbsolutePosition().getValueAsDouble();
 
-    // Example Code
-    //     private double encoderAngleDegrees(CANcoder angleEncoder) {
-    //   double rotations = angleEncoder.getAbsolutePosition().getValueAsDouble();
+    double angle = rotations * 360.0;
 
-    //   double angle = rotations * 360.0;
+    angle += cancoderOffsetDegrees;
 
-    //   angle += CANCODER_OFFSET_DEGREES;
+    angle = angle % 360;
 
-    //   angle = angle % 360;
+    if (angle < 0) {
+      angle += 360.0;
+    }
 
-    //   if (angle < 0) {
-    //     angle += 360.0;
-    //   }
-    //   return round2(angle);
-    // }
+    return round2(angle);
   }
 
   public void setSpeed(double speed) {
-    // FIXME Set the pid setpoint
+    speedSetpoint = speed;
   }
 
   public void setAngle(double angle) {
-    // FIXME Set the angle setpoint
+    angleSetpoint = angle;
   }
 
   /** round to two decimal places (for display) */
@@ -141,29 +140,29 @@ public class SwerveModule {
   }
 
   /** Speed PID controller */
-  private void speedPidControl(double setPointRpm, SparkMax motor) {
+  private void speedPidControl() {
 
-    double currentSpeed = motor.getEncoder().getVelocity();
-    double normalizedError = (setPointRpm - currentSpeed) / maxDriveSpeedRpm; // Normalize error
-    double estimatedOutput = setPointRpm / maxDriveSpeedRpm;
+    double currentSpeed = driveMotor.getEncoder().getVelocity();
+    double normalizedError = (speedSetpoint - currentSpeed) / maxDriveSpeedRpm; // Normalize error
+    double estimatedOutput = speedSetpoint / maxDriveSpeedRpm;
 
     // Set the speed to estimated value trimmed by the error
-    motor.set(estimatedOutput + (normalizedError * Kp));
+    driveMotor.set(estimatedOutput + (normalizedError * Kp));
   }
 
   /** Angle PID controller */
-  private void anglePidControl(int setAngle, SparkMax motor) {
+  private void anglePidControl() {
 
     double currentAngle = getAngle();
-    double error = setAngle - currentAngle;
+    double error = angleSetpoint - currentAngle;
     if (Math.abs(error) > 180) {
       error -= 360 * Math.signum(error);
     }
 
-    if (Math.abs(error) >= 3) {
-      motor.set(error / 180.0);
+    if (Math.abs(error) >= 1) {
+      turnMotor.set(error / 180.0);
     } else {
-      motor.set(0.0);
+      turnMotor.set(0.0);
     }
   }
 }
