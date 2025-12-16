@@ -5,7 +5,6 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.XboxController;
 
 /**
  * The methods in this class are called automatically corresponding to each mode, as described in
@@ -17,19 +16,7 @@ public class Robot extends TimedRobot {
   /*
    * Joystic and Deadband Calculator
    */
-  private XboxController xboxController;
-
-  private static final double DEADBAND = 0.2;
-  private static final double SLOW_X = 0.7;
-  private static final double SLOW_Y = .4;
-
-  // Calculate the slope and intercept for each of the
-  // slow zone and fast zone line segments.
-  private static final double SLOW_M = SLOW_Y / (SLOW_X - DEADBAND);
-  private static final double SLOW_B = -SLOW_M * DEADBAND;
-
-  private static final double FAST_M = (1.0 - SLOW_Y) / (1.0 - SLOW_X);
-  private static final double FAST_B = -(FAST_M * SLOW_X) + SLOW_Y;
+  private GameController gameController;
 
   /*
    * Swerve Modules
@@ -50,7 +37,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
 
-    xboxController = new XboxController(0);
+    gameController = new GameController(0);
 
     // FIXME
     frontRightSwerveModule = new SwerveModule("FrontRight", 0, 0, 0, 0, 0);
@@ -85,25 +72,25 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic() {
 
-    if (xboxController.getAButton()) {
+    if (gameController.getAButton()) {
       // Set the speed to exactly 200rpm
       frontRightSwerveModule.setSpeed(200.0);
-    } else if (xboxController.getBButton()) {
+    } else if (gameController.getBButton()) {
       speedPidControl(2000, driveMotor);
-    } else if (xboxController.getYButton()) {
+    } else if (gameController.getYButton()) {
       speedPidControl(5000, driveMotor);
     } else {
       // Set the drive speed based on the left Y axis with deadband applied
-      double leftY = -xboxController.getLeftY();
+      double leftY = -gameController.getLeftY();
       double speed = deadband(leftY);
       frontRightSwerveModule.setSpeed(speed);
     }
-    if (xboxController.getPOV() >= 0) {
-      anglePidControl(xboxController.getPOV(), turnMotor);
+    if (gameController.getPOV() >= 0) {
+      anglePidControl(gameController.getPOV(), turnMotor);
 
     } else {
       // Set the turn speed based on the right X axis with deadband applied
-      double rightX = xboxController.getRightX();
+      double rightX = gameController.getRightX();
       double turn = deadband(rightX);
       turnMotor.set(turn);
     }
@@ -132,23 +119,4 @@ public class Robot extends TimedRobot {
   /** This function is called periodically whilst in simulation. */
   @Override
   public void simulationPeriodic() {}
-
-  /**
-   * Deadband the input value
-   *
-   * @param x input value
-   * @return deadbanded output value
-   */
-  private double deadband(double x) {
-
-    if (Math.abs(x) < DEADBAND) {
-      return 0.0;
-    }
-    // y = mx + b
-    if (Math.abs(x) < SLOW_X) {
-      return (SLOW_M * Math.abs(x) + SLOW_B) * Math.signum(x);
-    }
-
-    return (FAST_M * Math.abs(x) + FAST_B) * Math.signum(x);
-  }
 }
