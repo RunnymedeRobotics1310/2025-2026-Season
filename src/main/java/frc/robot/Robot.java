@@ -18,21 +18,8 @@ public class Robot extends TimedRobot {
    */
   private GameController gameController;
 
-  /*
-   * Swerve Modules
-   */
-  private SwerveModule rearRightSwerveModule;
-
-  private SwerveModule frontRightSwerveModule;
-
-  private SwerveModule rearLeftSwerveModule;
-
-  private SwerveModule frontLeftSwerveModule;
-
-  /*
-   * Constants
-   */
-  double MAX_RPM = 6000.0; // max RPM for the motor
+  /** Swerve Subsystem */
+  private SwerveSubsystem swerveSubsystem;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -44,11 +31,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
 
     gameController = new GameController(0);
-
-    rearRightSwerveModule = new SwerveModule("rearRight", 30, 31, 32, MAX_RPM, -150.6);
-    frontRightSwerveModule = new SwerveModule("frontRight", 20, 21, 22, MAX_RPM, -349.19);
-    rearLeftSwerveModule = new SwerveModule("rearLeft", 35, 36, 37, MAX_RPM, -25.05);
-    frontLeftSwerveModule = new SwerveModule("frontLeft", 10, 11, 12, MAX_RPM, -137.4);
+    swerveSubsystem = new SwerveSubsystem();
   }
 
   /**
@@ -59,13 +42,7 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {
-
-    rearRightSwerveModule.periodic();
-    frontRightSwerveModule.periodic();
-    rearLeftSwerveModule.periodic();
-    frontLeftSwerveModule.periodic();
-  }
+  public void robotPeriodic() {}
 
   /** This function is called once when autonomous is enabled. */
   @Override
@@ -85,19 +62,19 @@ public class Robot extends TimedRobot {
 
     if (gameController.getAButton()) {
       // Set the speed to exactly 200rpm
-      setSpeed(200.0);
+      swerveSubsystem.setSpeed(200.0);
     } else if (gameController.getBButton()) {
-      setSpeed(2000.0);
+      swerveSubsystem.setSpeed(2000.0);
     } else if (gameController.getYButton()) {
-      setSpeed(5000.0);
+      swerveSubsystem.setSpeed(5000.0);
 
     } else {
       // Set the drive speed based on the left Y axis with deadband applied
       double speed = gameController.getLeftY();
-      setSpeed(MAX_RPM * speed);
+      swerveSubsystem.setSpeed(SwerveModule.MAX_DRIVE_RPM * speed);
     }
     if (gameController.getPOV() >= 0) {
-      setAngle(gameController.getPOV());
+      swerveSubsystem.setAngle(gameController.getPOV());
 
     } else {
       // Set the turn angle based on the angle of the right joystick
@@ -105,23 +82,14 @@ public class Robot extends TimedRobot {
       double rightY = gameController.getRightY();
       double angleRad = Math.atan2(rightY, rightX);
       double angleDeg = Math.toDegrees(angleRad) - 90;
-      if (angleDeg < 0) angleDeg += 360;
-      if (rightX != 0 || rightY != 0) setAngle(angleDeg);
+      if (angleDeg < 0) {
+        angleDeg += 360;
+      }
+
+      if (rightX != 0 || rightY != 0) {
+        swerveSubsystem.setAngle(angleDeg);
+      }
     }
-  }
-
-  private void setSpeed(double speed) {
-    frontLeftSwerveModule.setSpeed(speed);
-    rearLeftSwerveModule.setSpeed(speed);
-    frontRightSwerveModule.setSpeed(speed);
-    rearRightSwerveModule.setSpeed(speed);
-  }
-
-  private void setAngle(double angle) {
-    frontLeftSwerveModule.setAngle(angle);
-    rearLeftSwerveModule.setAngle(angle);
-    frontRightSwerveModule.setAngle(angle);
-    rearRightSwerveModule.setAngle(angle);
   }
 
   /** This function is called once when the robot is disabled. */

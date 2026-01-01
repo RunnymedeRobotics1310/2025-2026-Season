@@ -22,6 +22,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  */
 public class SwerveModule {
 
+  /*
+   * Constants
+   */
+  public static final double MAX_DRIVE_RPM = 6000.0; // max RPM for the drive motor
+
   // name of this swerve module (ie, FrontLeft)
   private final String moduleName;
 
@@ -36,7 +41,7 @@ public class SwerveModule {
    * PID Values
    */
   private double angleSetpoint, speedSetpoint;
-  private final double cancoderOffsetDegrees, maxDriveSpeedRpm;
+  private final double cancoderOffsetDegrees;
   double Kp = .5; // Kp is the proportional gain constant
 
   /** SwerveModule definition for one corner of the robot */
@@ -45,12 +50,10 @@ public class SwerveModule {
       int driveMotorCanId,
       int turnMotorCanId,
       int angleEncoderCanId,
-      double maxDriveSpeedRpm,
       double cancoderOffsetDegrees) {
 
     this.moduleName = moduleName;
     this.cancoderOffsetDegrees = cancoderOffsetDegrees;
-    this.maxDriveSpeedRpm = maxDriveSpeedRpm;
 
     // Initialize the swerve module
     init(driveMotorCanId, turnMotorCanId, angleEncoderCanId);
@@ -143,8 +146,8 @@ public class SwerveModule {
   private void speedPidControl() {
 
     double currentSpeed = driveMotor.getEncoder().getVelocity();
-    double normalizedError = (speedSetpoint - currentSpeed) / maxDriveSpeedRpm; // Normalize error
-    double estimatedOutput = speedSetpoint / maxDriveSpeedRpm;
+    double normalizedError = (speedSetpoint - currentSpeed) / MAX_DRIVE_RPM; // Normalize error
+    double estimatedOutput = speedSetpoint / MAX_DRIVE_RPM;
 
     // Set the speed to estimated value trimmed by the error
     driveMotor.set(estimatedOutput + (normalizedError * Kp));
