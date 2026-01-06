@@ -37,6 +37,9 @@ public class SwerveModule {
   private SparkMax turnMotor;
   private CANcoder angleEncoder;
 
+  private double moduleAngle;
+  private double rotationAngle;
+
   /*
    * PID Values
    */
@@ -50,10 +53,22 @@ public class SwerveModule {
       int driveMotorCanId,
       int turnMotorCanId,
       int angleEncoderCanId,
-      double cancoderOffsetDegrees) {
+      double cancoderOffsetDegrees,
+      double xPosition,
+      double yPosition) {
 
     this.moduleName = moduleName;
     this.cancoderOffsetDegrees = cancoderOffsetDegrees;
+
+    moduleAngle = 90 - Math.toDegrees(Math.atan2(yPosition, xPosition));
+    if (moduleAngle < 0) {
+      moduleAngle += 360;
+    }
+
+    rotationAngle = moduleAngle + 90;
+    if (rotationAngle > 360) {
+      rotationAngle -= 360;
+    }
 
     // Initialize the swerve module
     init(driveMotorCanId, turnMotorCanId, angleEncoderCanId);
@@ -167,5 +182,10 @@ public class SwerveModule {
     } else {
       turnMotor.set(0.0);
     }
+  }
+
+  public void setRotationSpeed(double speed) {
+    setAngle(rotationAngle);
+    setSpeed(speed);
   }
 }

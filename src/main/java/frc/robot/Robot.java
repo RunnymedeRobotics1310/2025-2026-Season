@@ -42,7 +42,9 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+    swerveSubsystem.periodic();
+  }
 
   /** This function is called once when autonomous is enabled. */
   @Override
@@ -59,6 +61,9 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    double rotationSpeed =
+        (gameController.getRightTriggerAxis() - gameController.getLeftTriggerAxis())
+            * SwerveModule.MAX_DRIVE_RPM;
 
     if (gameController.getAButton()) {
       // Set the speed to exactly 200rpm
@@ -71,7 +76,10 @@ public class Robot extends TimedRobot {
     } else {
       // Set the drive speed based on the left Y axis with deadband applied
       double speed = gameController.getLeftY();
-      swerveSubsystem.setSpeed(SwerveModule.MAX_DRIVE_RPM * speed);
+
+      if (rotationSpeed == 0) {
+        swerveSubsystem.setSpeed(SwerveModule.MAX_DRIVE_RPM * speed);
+      }
     }
     if (gameController.getPOV() >= 0) {
       swerveSubsystem.setAngle(gameController.getPOV());
@@ -89,6 +97,10 @@ public class Robot extends TimedRobot {
       if (rightX != 0 || rightY != 0) {
         swerveSubsystem.setAngle(angleDeg);
       }
+    }
+
+    if (rotationSpeed != 0) {
+      swerveSubsystem.setRotationSpeed(rotationSpeed);
     }
   }
 
