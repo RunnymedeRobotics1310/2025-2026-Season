@@ -104,7 +104,7 @@ public class Robot extends TimedRobot {
       double rightX = gameController.getRightX();
       double rightY = gameController.getRightY();
       double angleRad = Math.atan2(rightY, rightX);
-      double angleDeg = Math.toDegrees(angleRad) - 90;
+      double angleDeg = 90 - Math.toDegrees(angleRad);
       if (angleDeg < 0) angleDeg += 360;
       if (rightX != 0 || rightY != 0) setAngle(angleDeg);
     }
